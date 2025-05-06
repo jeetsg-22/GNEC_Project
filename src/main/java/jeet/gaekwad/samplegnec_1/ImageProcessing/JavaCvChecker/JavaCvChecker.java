@@ -13,10 +13,10 @@ public class JavaCvChecker {
     public void checkJavaCVLoaded() {
         try {
             Mat mat = new Mat();  // Create an empty matrix
-            System.out.println("JavaCV (OpenCV) is working! 🎯 Created empty Mat: " + mat);
+            System.out.println("JavaCV (OpenCV) is working Created empty Mat: " + mat);
 
         } catch (Throwable e) {
-            System.out.println("Failed to load JavaCV / OpenCV libraries! ❌");
+            System.out.println("Failed to load JavaCV  OpenCV libraries ");
             e.printStackTrace();
         }
     }
