@@ -20,8 +20,8 @@ public class AudioFile {
     private String format;
     private LocalDateTime upLoadedAt = LocalDateTime.now();
 
-    @Lob
-    @Column(columnDefinition = "LONGBLOB")
+
+    @Column(columnDefinition = "BYTEA")
     private byte[] data;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -30,7 +30,7 @@ public class TTSController {
             headers.set("Content-Disposition", "inline; filename=tts_preview.mp3");
 
             return new ResponseEntity<>(audioBytes, headers, HttpStatus.OK);
-        }catch (IOException e) {
+        }catch (IOException | InterruptedException e) {
             e.printStackTrace();
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }

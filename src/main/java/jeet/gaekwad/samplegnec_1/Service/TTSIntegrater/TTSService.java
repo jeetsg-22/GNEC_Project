@@ -5,5 +5,5 @@ import jeet.gaekwad.samplegnec_1.DTOs.TTSRequestDTO;
 import java.io.IOException;
 
 public interface TTSService {
-    byte[] generateAndSaveAudioFile(TTSRequestDTO Text) throws IOException;
+    byte[] generateAndSaveAudioFile(TTSRequestDTO Text) throws IOException, InterruptedException;
 }

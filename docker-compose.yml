@@ -2,19 +2,35 @@ version: '3.8'
 services:
   app:
     build: .
-    container_name: braille-backend
     ports:
       - "8080:8080"
     depends_on:
+      - postgres
       - mimic
     networks:
       - braille_network
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/sampledb
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+
+  postgres:
+    image: postgres:13
+    restart: always
+    environment:
+      POSTGRES_DB: sampledb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"  # Change: map host 5433 → container 5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - braille_network
 
   mimic:
     image: mycroftai/mimic3
-    container_name: mimic3
     ports:
       - "59125:59125"
     networks:
@@ -30,5 +46,5 @@ networks:
     driver: bridge
 
 volumes:
+  postgres_data:
   mimic3_data:
-    driver: local
