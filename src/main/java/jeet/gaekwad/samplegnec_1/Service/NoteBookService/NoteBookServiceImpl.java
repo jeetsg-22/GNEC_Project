@@ -66,6 +66,14 @@ public class NoteBookServiceImpl implements NoteBookService {
         return convertToDTO(updatedNoteBook);
     }
 
+    @Override
+    public List<AudioFile> getAudioFilesByNotebookId(Long notebookId) {
+        NoteBook notebook = notebookRepository.findById(notebookId)
+                .orElseThrow(() -> new NoteBookInvalidException("Notebook not found"));
+
+        return notebook.getAudioFiles();
+    }
+
     private NoteBookDTO convertToDTO(NoteBook notebook) {
         NoteBookDTO dto = new NoteBookDTO();
         dto.setId(notebook.getNotebookid());

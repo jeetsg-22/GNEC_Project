@@ -5,7 +5,7 @@ import jeet.gaekwad.samplegnec_1.Security.JWT.Filter.JwtRefreshTokenFilter;
 import jeet.gaekwad.samplegnec_1.Security.JWT.ProviderList.JwtAuthenticationProvider;
 import jeet.gaekwad.samplegnec_1.Security.JWT.JwtUtils;
 import jeet.gaekwad.samplegnec_1.Security.JWT.Filter.JwtValidationFilter;
-import jeet.gaekwad.samplegnec_1.Security.Oauth.CustomOAuthHandler;
+import jeet.gaekwad.samplegnec_1.Security.Oauth.CustomOauthHandler;
 import jeet.gaekwad.samplegnec_1.Service.AccountService.AccountServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -22,8 +22,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -34,9 +38,10 @@ public class SecurityConfig {
 
     private UserDetailsService userDetailsService;
     private JwtUtils jwtUtils;
-    private CustomOAuthHandler customOAuthHandler;
+    private CustomOauthHandler customOAuthHandler;
 
-    public SecurityConfig(UserDetailsService userDetailsService, JwtUtils jwtUtils , CustomOAuthHandler customOAuthHandler) {
+    @Autowired
+    public SecurityConfig(UserDetailsService userDetailsService, JwtUtils jwtUtils , CustomOauthHandler customOAuthHandler) {
         this.userDetailsService = userDetailsService;
         this.jwtUtils = jwtUtils;
         this.customOAuthHandler = customOAuthHandler;
@@ -65,44 +70,69 @@ public class SecurityConfig {
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
    }
-   @Bean
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        // Initialize your filters
+        JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter(authenticationManager(), jwtUtils);
+        JwtValidationFilter jwtValidationFilter = new JwtValidationFilter(authenticationManager());
+        JwtRefreshTokenFilter jwtRefreshTokenFilter = new JwtRefreshTokenFilter(jwtUtils, authenticationManager());
 
-       JwtAuthenticationFilter jwtAuthenticationFilter = new
-               JwtAuthenticationFilter(authenticationManager(), jwtUtils); // For Jwt Authentication
+        http
+                // Enable CORS and disable CSRF
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
 
-       JwtValidationFilter jwtValidationFilter = new
-               JwtValidationFilter(authenticationManager()); // For Jwt Validation
+                // Authorization rules
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/login",
+                                "/logout",
+                                "/v1/register",
+                                "/mimic3/tts",
+                                "/api/auth/**",
+                                "/oauth2/**",
+                                "/login/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs.yaml",
+                                "/error"
+                        ).permitAll()
+                        .requestMatchers("/v1/accounts").hasRole("ADMIN")
+                        .anyRequest().authenticated()
+                )
 
-       JwtRefreshTokenFilter jwtRefreshTokenFilter = new
-               JwtRefreshTokenFilter(jwtUtils,authenticationManager()); // For refreshing the Token
+                // Session management
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
 
+                // OAuth2 configuration
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(customOAuthHandler)
+                )
 
-       http.authorizeHttpRequests(auth -> auth
-               .requestMatchers(
-                       "/login",
-                       "/logout",
-                       "/v1/register",
-                       "/mimic3/tts" ,
-                       "/api/auth/**",           // Your existing signup/login APIs
-                       "/oauth2/**",              // OAuth2 login flow URLs
-                       "/login/**",
-                       "/v3/api-docs/**",
-                       "/swagger-ui/**",
-                       "/swagger-ui.html",
-                       "/v3/api-docs.yaml",// Spring internal login URLs
-                       "/error" ).permitAll()
-                       .requestMatchers("/v1/accounts").hasRole("ADMIN")
-               .anyRequest().authenticated())
-               .csrf(csrf -> csrf.disable())
-               .sessionManagement(session ->
-                       session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))// stateless for JWT
-               .oauth2Login(oauth2 -> oauth2.successHandler(customOAuthHandler))
-               .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-               .addFilterAfter(jwtValidationFilter, JwtAuthenticationFilter.class)
-               .addFilterAfter(jwtRefreshTokenFilter, JwtValidationFilter.class);
+                // JWT filters
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(jwtValidationFilter, JwtAuthenticationFilter.class)
+                .addFilterAfter(jwtRefreshTokenFilter, JwtValidationFilter.class);
 
+        return http.build();
+    }
 
-       return http.build();
-   }
+    // CORS Configuration Bean
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of("http://localhost:3000")); // Your frontend URL
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
 }

@@ -2,9 +2,11 @@ package jeet.gaekwad.samplegnec_1.Controller.NoteBooks;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jeet.gaekwad.samplegnec_1.DTOs.AudioFileDTO;
 import jeet.gaekwad.samplegnec_1.DTOs.NoteBookDTO;
 import jeet.gaekwad.samplegnec_1.DTOs.NoteBookDetailDTO;
 import jeet.gaekwad.samplegnec_1.Model.Accounts;
+import jeet.gaekwad.samplegnec_1.Model.AudioFile;
 import jeet.gaekwad.samplegnec_1.Model.NoteBook;
 import jeet.gaekwad.samplegnec_1.Repository.AccountRepository;
 import jeet.gaekwad.samplegnec_1.Repository.NoteBookRepository;
@@ -93,4 +95,15 @@ public class NoteBookController {
         NoteBookDTO updatedNoteBook = notebookService.updateNoteBook(id, name);
         return ResponseEntity.ok(updatedNoteBook);
     }
+    @Operation(
+            summary = "Get audio files from a notebook",
+            description = "Returns a list of audio files for the given notebook ID."
+    )
+    @GetMapping("/{id}/audio-files")
+    public ResponseEntity<List<AudioFile>> getAudioFilesByNotebookId(@PathVariable("id") Long id) {
+        List<AudioFile> audioFiles = notebookService.getAudioFilesByNotebookId(id);
+        return ResponseEntity.ok(audioFiles);
+    }
+
+
 }

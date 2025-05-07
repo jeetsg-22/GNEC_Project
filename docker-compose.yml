@@ -5,15 +5,19 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - postgres
-      - mimic
+      postgres:
+        condition: service_healthy
+      mimic:
+        condition: service_started
     networks:
       - braille_network
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/sampledb
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
-      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      # Always use create-drop to recreate schema on startup
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=create-drop
+    restart: on-failure
 
   postgres:
     image: postgres:13
@@ -23,11 +27,17 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5433:5432"  # Change: map host 5433 → container 5432
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - "5433:5432"
+    # Use tmpfs (memory) for PostgreSQL data - data disappears when container stops
+    tmpfs:
+      - /var/lib/postgresql/data:exec
     networks:
       - braille_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   mimic:
     image: mycroftai/mimic3
@@ -35,8 +45,8 @@ services:
       - "59125:59125"
     networks:
       - braille_network
-    volumes:
-      - mimic3_data:/home/mimic3/.local/share
+    tmpfs:
+      - /home/mimic3/.local/share
     environment:
       - HOME=/home/mimic3
     user: "0:0"
@@ -45,6 +55,4 @@ networks:
   braille_network:
     driver: bridge
 
-volumes:
-  postgres_data:
-  mimic3_data:
+# No persistent volumes defined
